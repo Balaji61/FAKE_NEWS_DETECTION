@@ -1,41 +1,42 @@
 import pandas as pd
-import re
+from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
+import joblib
 
-# Load dataset
+# =========================
+# 1. Load dataset
+# =========================
 df = pd.read_csv("fake_news.csv")
 
+# Check columns
+print(df.columns)
 
-def clean_text(text):
-    text = str(text).lower()
-    text = re.sub(r'[^a-z ]', '', text)  
-    text = re.sub(r'\s+', ' ', text)
-    return text.strip()
+# =========================
+# 2. Split dataset
+# =========================
+X = df["text"]
+y = df["label"]
 
-df['text'] = df['text'].apply(clean_text)
+# =========================
+# 3. Create TF-IDF Vectorizer
+# =========================
+vectorizer = TfidfVectorizer(stop_words="english", max_features=5000)
 
+X_vec = vectorizer.fit_transform(X)
 
-# Your labels are ALREADY numeric (0/1)
-X = df['text']
-y = df['label']
+# =========================
+# 4. Train Logistic Regression Model
+# =========================
+model = LogisticRegression(max_iter=200)
+model.fit(X_vec, y)
 
-# TF-IDF 
-vectorizer = TfidfVectorizer(
-    stop_words='english',
-    max_features=5000,
-    min_df=2
-)
+print("Training complete!")
 
-X_tfidf = vectorizer.fit_transform(X)
+# =========================
+# 5. Save model + vectorizer
+# =========================
+joblib.dump(model, "model.pkl")
+joblib.dump(vectorizer, "vectorizer.pkl")
 
-# MODEL 
-model = LogisticRegression(max_iter=1000)
-model.fit(X_tfidf, y)
-
-# PREDICTION
-def predict_news(news_text):
-    news_text = clean_text(news_text)
-    vector = vectorizer.transform([news_text])
-    prediction = model.predict(vector)[0]
-    return "REAL NEWS" if prediction == 1 else "FAKE NEWS"
+print("model.pkl and vectorizer.pkl saved successfully!")
